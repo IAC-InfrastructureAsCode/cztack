@@ -20,7 +20,7 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 )
 
-// Host is a host on AWS.
+// Host is a remote host.
 type Host struct {
 	Hostname    string // host name or ip address
 	SshUserName string // user name
@@ -29,6 +29,7 @@ type Host struct {
 	SshKeyPair       *KeyPair  // ssh key pair to use as authentication method (disabled by default)
 	SshAgent         bool      // enable authentication using your existing local SSH agent (disabled by default)
 	OverrideSshAgent *SshAgent // enable an in process `SshAgent` for connections to this host (disabled by default)
+	Password         string    // plain text password (blank by default)
 }
 
 type ScpDownloadOptions struct {
@@ -548,6 +549,11 @@ func createAuthMethodsForHost(host Host) ([]ssh.AuthMethod, error) {
 			return methods, err
 		}
 		methods = append(methods, []ssh.AuthMethod{ssh.PublicKeys(signer)}...)
+	}
+
+	// Use given password
+	if len(host.Password) > 0 {
+		methods = append(methods, []ssh.AuthMethod{ssh.Password(host.Password)}...)
 	}
 
 	// no valid authentication method was provided

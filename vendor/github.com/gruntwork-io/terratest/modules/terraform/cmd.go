@@ -49,6 +49,25 @@ func RunTerraformCommandE(t *testing.T, additionalOptions *Options, additionalAr
 	options, args := GetCommonOptions(additionalOptions, additionalArgs...)
 
 	cmd := shell.Command{
+		Command:           options.TerraformBinary,
+		Args:              args,
+		WorkingDir:        options.TerraformDir,
+		Env:               options.EnvVars,
+		OutputMaxLineSize: options.OutputMaxLineSize,
+	}
+
+	description := fmt.Sprintf("%s %v", options.TerraformBinary, args)
+	return retry.DoWithRetryableErrorsE(t, description, options.RetryableTerraformErrors, options.MaxRetries, options.TimeBetweenRetries, func() (string, error) {
+		return shell.RunCommandAndGetOutputE(t, cmd)
+	})
+}
+
+// RunTerraformCommandAndGetStdoutE runs terraform with the given arguments and options and returns solely its stdout
+// (but not stderr).
+func RunTerraformCommandAndGetStdoutE(t *testing.T, additionalOptions *Options, additionalArgs ...string) (string, error) {
+	options, args := GetCommonOptions(additionalOptions, additionalArgs...)
+
+	cmd := shell.Command{
 		Command:    options.TerraformBinary,
 		Args:       args,
 		WorkingDir: options.TerraformDir,
@@ -57,7 +76,7 @@ func RunTerraformCommandE(t *testing.T, additionalOptions *Options, additionalAr
 
 	description := fmt.Sprintf("%s %v", options.TerraformBinary, args)
 	return retry.DoWithRetryableErrorsE(t, description, options.RetryableTerraformErrors, options.MaxRetries, options.TimeBetweenRetries, func() (string, error) {
-		return shell.RunCommandAndGetOutputE(t, cmd)
+		return shell.RunCommandAndGetStdOutE(t, cmd)
 	})
 }
 
@@ -76,10 +95,11 @@ func GetExitCodeForTerraformCommandE(t *testing.T, additionalOptions *Options, a
 
 	logger.Logf(t, "Running %s with args %v", options.TerraformBinary, args)
 	cmd := shell.Command{
-		Command:    options.TerraformBinary,
-		Args:       args,
-		WorkingDir: options.TerraformDir,
-		Env:        options.EnvVars,
+		Command:           options.TerraformBinary,
+		Args:              args,
+		WorkingDir:        options.TerraformDir,
+		Env:               options.EnvVars,
+		OutputMaxLineSize: options.OutputMaxLineSize,
 	}
 
 	_, err := shell.RunCommandAndGetOutputE(t, cmd)

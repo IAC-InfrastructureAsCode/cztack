@@ -19,7 +19,7 @@ func Output(t *testing.T, options *Options, key string) string {
 
 // OutputE calls terraform output for the given variable and return its value.
 func OutputE(t *testing.T, options *Options, key string) (string, error) {
-	output, err := RunTerraformCommandE(t, options, "output", "-no-color", key)
+	output, err := RunTerraformCommandAndGetStdoutE(t, options, "output", "-no-color", key)
 
 	if err != nil {
 		return "", err
@@ -60,7 +60,7 @@ func OutputList(t *testing.T, options *Options, key string) []string {
 // OutputListE calls terraform output for the given variable and returns its value as a list.
 // If the output value is not a list type, then it returns an error.
 func OutputListE(t *testing.T, options *Options, key string) ([]string, error) {
-	out, err := RunTerraformCommandE(t, options, "output", "-no-color", "-json", key)
+	out, err := RunTerraformCommandAndGetStdoutE(t, options, "output", "-no-color", "-json", key)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func OutputMap(t *testing.T, options *Options, key string) map[string]string {
 // OutputMapE calls terraform output for the given variable and returns its value as a map.
 // If the output value is not a map type, then it returns an error.
 func OutputMapE(t *testing.T, options *Options, key string) (map[string]string, error) {
-	out, err := RunTerraformCommandE(t, options, "output", "-no-color", "-json", key)
+	out, err := RunTerraformCommandAndGetStdoutE(t, options, "output", "-no-color", "-json", key)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +164,7 @@ func OutputForKeys(t *testing.T, options *Options, keys []string) map[string]int
 // OutputForKeysE calls terraform output for the given key list and returns values as a map.
 // The returned values are of type interface{} and need to be type casted as necessary. Refer to output_test.go
 func OutputForKeysE(t *testing.T, options *Options, keys []string) (map[string]interface{}, error) {
-	out, err := RunTerraformCommandE(t, options, "output", "-no-color", "-json")
+	out, err := RunTerraformCommandAndGetStdoutE(t, options, "output", "-no-color", "-json")
 	if err != nil {
 		return nil, err
 	}

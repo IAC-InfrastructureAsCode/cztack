@@ -22,4 +22,5 @@ type Options struct {
 	NoColor                  bool                   // Whether the -no-color flag will be set for any Terraform command or not
 	SshAgent                 *ssh.SshAgent          // Overrides local SSH agent with the given in-process agent
 	NoStderr                 bool                   // Disable stderr redirection
+	OutputMaxLineSize        int                    // The max size of one line in stdout and stderr (in bytes)
 }

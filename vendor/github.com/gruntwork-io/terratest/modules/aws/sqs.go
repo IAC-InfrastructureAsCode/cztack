@@ -48,6 +48,46 @@ func CreateRandomQueueE(t *testing.T, awsRegion string, prefix string) (string, 
 	return aws.StringValue(queue.QueueUrl), nil
 }
 
+// CreateRandomFifoQueue creates a new FIFO SQS queue with a random name that starts with the given prefix and return the queue URL.
+func CreateRandomFifoQueue(t *testing.T, awsRegion string, prefix string) string {
+	url, err := CreateRandomFifoQueueE(t, awsRegion, prefix)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return url
+}
+
+// CreateRandomFifoQueueE creates a new FIFO SQS queue with a random name that starts with the given prefix and return the queue URL.
+func CreateRandomFifoQueueE(t *testing.T, awsRegion string, prefix string) (string, error) {
+	logger.Logf(t, "Creating randomly named FIFO SQS queue with prefix %s", prefix)
+
+	sqsClient, err := NewSqsClientE(t, awsRegion)
+	if err != nil {
+		return "", err
+	}
+
+	channel, err := uuid.NewUUID()
+	if err != nil {
+		return "", err
+	}
+
+	channelName := fmt.Sprintf("%s-%s.fifo", prefix, channel.String())
+
+	queue, err := sqsClient.CreateQueue(&sqs.CreateQueueInput{
+		QueueName: aws.String(channelName),
+		Attributes: map[string]*string{
+			"ContentBasedDeduplication": aws.String("true"),
+			"FifoQueue":                 aws.String("true"),
+		},
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	return aws.StringValue(queue.QueueUrl), nil
+}
+
 // DeleteQueue deletes the SQS queue with the given URL.
 func DeleteQueue(t *testing.T, awsRegion string, queueURL string) {
 	err := DeleteQueueE(t, awsRegion, queueURL)
@@ -117,6 +157,42 @@ func SendMessageToQueueE(t *testing.T, awsRegion string, queueURL string, messag
 	res, err := sqsClient.SendMessage(&sqs.SendMessageInput{
 		MessageBody: &message,
 		QueueUrl:    &queueURL,
+	})
+
+	if err != nil {
+		if strings.Contains(err.Error(), "AWS.SimpleQueueService.NonExistentQueue") {
+			logger.Logf(t, fmt.Sprintf("WARN: Client has stopped listening on queue %s", queueURL))
+			return nil
+		}
+		return err
+	}
+
+	logger.Logf(t, "Message id %s sent to queue %s", aws.StringValue(res.MessageId), queueURL)
+
+	return nil
+}
+
+// SendMessageToFifoQueue sends the given message to the FIFO SQS queue with the given URL.
+func SendMessageFifoToQueue(t *testing.T, awsRegion string, queueURL string, message string, messageGroupID string) {
+	err := SendMessageToFifoQueueE(t, awsRegion, queueURL, message, messageGroupID)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// SendMessageToFifoQueueE sends the given message to the FIFO SQS queue with the given URL.
+func SendMessageToFifoQueueE(t *testing.T, awsRegion string, queueURL string, message string, messageGroupID string) error {
+	logger.Logf(t, "Sending message %s to queue %s", message, queueURL)
+
+	sqsClient, err := NewSqsClientE(t, awsRegion)
+	if err != nil {
+		return err
+	}
+
+	res, err := sqsClient.SendMessage(&sqs.SendMessageInput{
+		MessageBody:    &message,
+		QueueUrl:       &queueURL,
+		MessageGroupId: &messageGroupID,
 	})
 
 	if err != nil {
